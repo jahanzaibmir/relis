@@ -4,7 +4,7 @@
 #include "drivers/vga.h"
 #include "relis/spinlock.h"
 #include "relis/string.h"
-#include "arch/x86/io.h"
+#include "arch/io.h"
 #include <stdarg.h>
 
 static spinlock_t console_lock = SPIN_LOCK_UNLOCKED;

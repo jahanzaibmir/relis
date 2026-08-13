@@ -1,4 +1,3 @@
-// init/main.c
 #include "relis/printk.h"
 #include "relis/sched.h"
 #include "relis/irq.h"
@@ -7,26 +6,29 @@
 #include "relis/fs.h"
 #include "relis/net.h"
 #include "relis/types.h"
-#include "arch/x86/gdt.h"
+#include "relis/string.h" // Added to fix kstrcpy warning
+#include "arch/gdt.h"
 #include "drivers/timer.h"
 #include "drivers/keyboard.h"
 
 extern struct file_system_type proc_fs_type;
 extern struct file_system_type ramfs_fs_type;
 
-typedef struct __attribute__((packed)) {
-    uint32_t flags;
-    uint32_t mem_lower, mem_upper;
-} multiboot_info_t;
+static void heartbeat_task(void) {
+    while (1) {
+        __asm__ volatile("hlt");
+    }
+}
 
-void start_kernel(uint32_t mb_magic, multiboot_info_t *mb_info) {
+void start_kernel(uint64_t mb_magic, void *mb_info) {
     (void)mb_magic;
+    (void)mb_info;
     
     console_init();
-    printk("=== RELIS KERNEL BOOTING ===");
+    printk("=== RELIS 64-BIT KERNEL BOOTING ===");
 
     gdt_init();
-    pmm_init(mb_info->mem_upper, 0); 
+    pmm_init(0, 0); 
     irq_init();  
     sched_init(); 
     syscall_init();
@@ -36,11 +38,9 @@ void start_kernel(uint32_t mb_magic, multiboot_info_t *mb_info) {
 
     vfs_init();
     
-    // Mount ramfs as root
     struct dentry *root = vfs_kern_mount(&ramfs_fs_type);
     printk("Root filesystem (ramfs) mounted at /");
 
-    // Mount proc and attach it to the root directory
     struct dentry *proc_root = proc_fs_type.mount(&proc_fs_type, NULL);
     if (root && proc_root) {
         kstrcpy(proc_root->d_name, "proc");
@@ -48,7 +48,6 @@ void start_kernel(uint32_t mb_magic, multiboot_info_t *mb_info) {
     }
     printk("Proc filesystem mounted at /proc");
 
-    // Initialize the network subsystem
     net_init();
 
     __asm__ volatile("sti");
@@ -65,8 +64,10 @@ void start_kernel(uint32_t mb_magic, multiboot_info_t *mb_info) {
     } else {
         printk("Failed to open /proc/cpuinfo");
     }
+    
+    kernel_thread("kworker", heartbeat_task, 0);
 
-    printk("RELIS Kernel v1.0 initialized. Idling...");
+    printk("RELIS Kernel v1.0 (x86_64) initialized. Idling...");
 
     while (1) {
         __asm__ volatile("hlt");

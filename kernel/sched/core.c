@@ -1,16 +1,14 @@
-// kernel/sched/core.c
 #include "relis/sched.h"
 #include "relis/mm.h"
 #include "relis/string.h"
 #include "relis/printk.h"
 
 LIST_HEAD(runqueue);
-spinlock_t rq_lock = SPIN_LOCK_UNLOCKED;
 struct task_struct *current_task = 0;
 static uint32_t next_pid = 1;
 
 void sched_init(void) {
-    printk("Scheduler initialized");
+    printk("Scheduler initialized (64-bit Preemptive)");
     current_task = kmalloc(sizeof(struct task_struct));
     if (!current_task) {
         printk("PANIC: Failed to allocate initial task!");
@@ -18,68 +16,55 @@ void sched_init(void) {
     }
     kmemset(current_task, 0, sizeof(struct task_struct));
     current_task->pid = 0;
-    kstrcpy(current_task->name, "idle");
+    kstrcpy(current_task->name, "swapper");
     current_task->state = TASK_RUNNING;
     INIT_LIST_HEAD(&current_task->list);
     list_add(&current_task->list, &runqueue);
 }
 
-// This wrapper is called when a new task starts running
-static void thread_trampoline(void (*fn)(void), void *arg) {
-    fn();
-    // If the task ever returns, loop forever (later we will add an exit() here)
+static void thread_trampoline(void) {
+    __asm__ volatile("sti");
+    current_task->fn();
+    current_task->state = TASK_ZOMBIE;
     while (1) schedule();
 }
 
 int kernel_thread(const char *name, void (*fn)(void), void *arg) {
-    spin_lock(&rq_lock);
-    struct task_struct *new_task = kmalloc(sizeof(struct task_struct));
-    if (!new_task) {
-        spin_unlock(&rq_lock);
-        return -1;
-    }
-    kmemset(new_task, 0, sizeof(struct task_struct));
-    new_task->pid = next_pid++;
-    kstrcpy(new_task->name, name);
-    new_task->state = TASK_RUNNING;
+    struct task_struct *p = kmalloc(sizeof(struct task_struct));
+    if (!p) return -1;
     
-    // Set up the initial stack for context switch
-    uint32_t *stack = new_task->stack + (KERNEL_STACK_SIZE / 4);
-    *--stack = (uint32_t)arg;                 // arg for trampoline
-    *--stack = (uint32_t)fn;                  // fn for trampoline
-    *--stack = (uint32_t)0;                   // return addr (dummy)
-    *--stack = (uint32_t)thread_trampoline;   // EIP to resume
+    kmemset(p, 0, sizeof(struct task_struct));
+    p->pid = next_pid++;
+    kstrcpy(p->name, name);
+    p->state = TASK_RUNNING;
+    p->fn = fn;
+    p->arg = arg;
     
-    // Saved registers for switch_to
-    *--stack = 0;                             // EBP
-    *--stack = 0;                             // EBX
-    *--stack = 0;                             // ESI
-    *--stack = 0;                             // EDI
+    uint64_t *stack = p->stack + (KERNEL_STACK_SIZE / 8);
     
-    new_task->esp = stack;
-    list_add(&new_task->list, &runqueue);
-    spin_unlock(&rq_lock);
-    return new_task->pid;
+    *--stack = (uint64_t)thread_trampoline;
+    *--stack = 0;
+    *--stack = 0;
+    *--stack = 0;
+    *--stack = 0;
+    *--stack = 0;
+    *--stack = 0;
+    
+    p->rsp = stack;
+    list_add(&p->list, &runqueue);
+    return p->pid;
 }
 
 void schedule(void) {
-    spin_lock(&rq_lock);
-    if (list_empty(&runqueue)) {
-        spin_unlock(&rq_lock);
-        return;
-    }
+    if (list_empty(&runqueue)) return;
     
     struct task_struct *prev = current_task;
     struct list_head *next_list = current_task->list.next;
     if (next_list == &runqueue) next_list = next_list->next; 
     struct task_struct *next = list_entry(next_list, struct task_struct, list);
     
-    if (prev == next) {
-        spin_unlock(&rq_lock);
-        return;
-    }
+    if (prev == next) return;
     
     current_task = next;
-    spin_unlock(&rq_lock);
     switch_to(prev, next);
 }

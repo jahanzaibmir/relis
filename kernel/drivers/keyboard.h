@@ -1,6 +1,8 @@
-/* RELIS — kernel/drivers/keyboard.h */
 #pragma once
 #include <stdint.h>
+
+#define KB_BUF_SIZE 256
+
 void keyboard_init(void);
 char keyboard_getchar(void);
 char keyboard_poll(void);

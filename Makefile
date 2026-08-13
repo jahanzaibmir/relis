@@ -1,4 +1,4 @@
-# RELIS Kernel - Linux-style Makefile
+# RELIS Kernel - 64-bit Makefile
 .RECIPEPREFIX := >
 
 CC      := gcc
@@ -6,11 +6,12 @@ AS      := nasm
 LD      := gcc
 
 CFLAGS  := -std=gnu11 -ffreestanding -fno-builtin -fno-stack-protector \
-           -fno-exceptions -fno-pie -m32 -Wall -Wextra \
-           -I . -I include -I arch/x86 -I kernel -I kernel/drivers -I drivers -I mm -I fs -I net
+           -fno-exceptions -fno-pie -m64 -mno-red-zone -mcmodel=kernel \
+           -Wall -Wextra \
+           -I . -I include -I arch -I kernel -I kernel/drivers -I drivers -I mm -I fs -I net
 
-ASFLAGS := -f elf32
-LDFLAGS := -T arch/x86/linker.ld -ffreestanding -nostdlib -m32 -no-pie -e _start -lgcc
+ASFLAGS := -f elf64
+LDFLAGS := -T arch/linker.ld -ffreestanding -nostdlib -m64 -no-pie -e _start -lgcc
 
 BUILD   := build
 KERNEL  := $(BUILD)/relis.elf
@@ -28,8 +29,8 @@ KERNEL_C_SRCS := \
     mm/page_alloc.c \
     mm/slab.c \
     mm/paging.c \
-    arch/x86/gdt.c \
-    arch/x86/idt.c \
+    arch/gdt.c \
+    arch/idt.c \
     kernel/drivers/vga.c \
     kernel/drivers/serial.c \
     kernel/drivers/timer.c \
@@ -46,9 +47,9 @@ KERNEL_C_SRCS := \
     kernel/drivers/net/e1000.c
 
 KERNEL_ASM_SRCS := \
-    arch/x86/entry.asm \
-    arch/x86/gdt_flush.asm \
-    arch/x86/isr_stubs.asm \
+    arch/entry.asm \
+    arch/gdt_flush.asm \
+    arch/isr_stubs.asm \
     kernel/sched/switch.asm
 
 KERNEL_OBJS := $(patsubst %.c, $(BUILD)/%.o, $(KERNEL_C_SRCS)) \
@@ -85,7 +86,7 @@ iso: $(KERNEL) $(BUILD)/disk.img
 >echo 'set timeout=0'                        >  $(ISO_DIR)/boot/grub/grub.cfg
 >echo 'set default=0'                        >> $(ISO_DIR)/boot/grub/grub.cfg
 >echo 'menuentry "RELIS" {'                  >> $(ISO_DIR)/boot/grub/grub.cfg
->echo '  multiboot /boot/relis.elf'          >> $(ISO_DIR)/boot/grub/grub.cfg
+>echo '  multiboot2 /boot/relis.elf'         >> $(ISO_DIR)/boot/grub/grub.cfg
 >echo '  set gfxpayload=1024x768x32'         >> $(ISO_DIR)/boot/grub/grub.cfg
 >echo '}'                                    >> $(ISO_DIR)/boot/grub/grub.cfg
 >grub-mkrescue -o $(ISO) $(ISO_DIR) 2>/dev/null
@@ -93,7 +94,7 @@ iso: $(KERNEL) $(BUILD)/disk.img
 
 .PHONY: run
 run: iso $(BUILD)/disk.img
->qemu-system-i386 -cdrom $(ISO) -m 256M -drive file=$(BUILD)/disk.img,format=raw,if=ide -serial stdio -vga std -net nic,model=e1000 -net user
+>qemu-system-x86_64 -cdrom $(ISO) -m 256M -drive file=$(BUILD)/disk.img,format=raw,if=ide -serial stdio -vga std -net nic,model=e1000 -net user
 
 .PHONY: clean
 clean:

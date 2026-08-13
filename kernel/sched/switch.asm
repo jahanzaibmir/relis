@@ -1,21 +1,25 @@
 section .text
+bits 64
 global switch_to
+
 switch_to:
-    push ebx
-    push esi
-    push edi
-    push ebp
+    push rbp
+    push rbx
+    push r12
+    push r13
+    push r14
+    push r15
     
-    mov eax, [esp + 20]      ; prev struct
-    mov [eax], esp           ; save esp into prev->esp
+    mov [rdi], rsp
     
-    mov eax, [esp + 24]      ; next struct
-    mov esp, [eax]           ; load next->esp
+    mov rsp, [rsi]
     
-    pop ebp
-    pop edi
-    pop esi
-    pop ebx
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    pop rbp
     ret
 
 section .note.GNU-stack noalloc noexec nowrite progbits
