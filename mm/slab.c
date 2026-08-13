@@ -1,5 +1,7 @@
+// mm/slab.c
 #include "relis/mm.h"
 #include "relis/spinlock.h"
+#include "relis/string.h"
 
 uint8_t kernel_heap_region[4 * 1024 * 1024] __attribute__((aligned(16)));
 uint32_t kernel_heap_size = 4 * 1024 * 1024;
@@ -16,6 +18,12 @@ void *kmalloc(size_t size) {
     void *ptr = &kernel_heap_region[heap_ptr];
     heap_ptr += (size + 15) & ~15; // 16-byte alignment
     spin_unlock(&heap_lock);
+    return ptr;
+}
+
+void *kcalloc(size_t nmemb, size_t size) {
+    void *ptr = kmalloc(nmemb * size);
+    if (ptr) kmemset(ptr, 0, nmemb * size);
     return ptr;
 }
 

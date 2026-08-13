@@ -7,7 +7,7 @@ LD      := gcc
 
 CFLAGS  := -std=gnu11 -ffreestanding -fno-builtin -fno-stack-protector \
            -fno-exceptions -fno-pie -m32 -Wall -Wextra \
-           -I . -I include -I arch/x86 -I kernel -I kernel/drivers -I drivers -I mm -I kernel/mm -I fs -I kernel/fs
+           -I . -I include -I arch/x86 -I kernel -I kernel/drivers -I drivers -I mm -I fs -I net
 
 ASFLAGS := -f elf32
 LDFLAGS := -T arch/x86/linker.ld -ffreestanding -nostdlib -m32 -no-pie -e _start -lgcc
@@ -19,6 +19,7 @@ ISO     := $(BUILD)/relis.iso
 
 KERNEL_C_SRCS := \
     init/main.c \
+    kernel/kprintf.c \
     kernel/printk/printk.c \
     kernel/sched/core.c \
     kernel/irq/manage.c \
@@ -26,12 +27,23 @@ KERNEL_C_SRCS := \
     lib/string.c \
     mm/page_alloc.c \
     mm/slab.c \
+    mm/paging.c \
     arch/x86/gdt.c \
     arch/x86/idt.c \
     kernel/drivers/vga.c \
     kernel/drivers/serial.c \
     kernel/drivers/timer.c \
-    kernel/drivers/keyboard.c
+    kernel/drivers/keyboard.c \
+    kernel/drivers/disk/ata.c \
+    kernel/drivers/pci/pci.c \
+    fs/vfs.c \
+    fs/proc/proc.c \
+    fs/ramfs/ramfs.c \
+    net/net.c \
+    net/core/dev.c \
+    net/ipv4/ip.c \
+    net/ipv4/udp.c \
+    kernel/drivers/net/e1000.c
 
 KERNEL_ASM_SRCS := \
     arch/x86/entry.asm \
