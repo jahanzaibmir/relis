@@ -10,7 +10,10 @@ static uint64_t tick_ns = 10000000;
 static void timer_callback(struct registers *regs) {
     (void)regs;
     jiffies++;
-    schedule();
+    scheduler_tick();
+    if (current_task->flags & TIF_NEED_RESCHED) {
+        schedule();
+    }
 }
 
 void timer_init(uint32_t freq) {

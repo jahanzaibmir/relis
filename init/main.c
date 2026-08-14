@@ -1,3 +1,4 @@
+// init/main.c
 #include "relis/printk.h"
 #include "relis/sched.h"
 #include "relis/irq.h"
@@ -6,7 +7,7 @@
 #include "relis/fs.h"
 #include "relis/net.h"
 #include "relis/types.h"
-#include "relis/string.h" // Added to fix kstrcpy warning
+#include "relis/string.h"
 #include "arch/gdt.h"
 #include "drivers/timer.h"
 #include "drivers/keyboard.h"
@@ -15,29 +16,27 @@ extern struct file_system_type proc_fs_type;
 extern struct file_system_type ramfs_fs_type;
 
 static void heartbeat_task(void) {
-    while (1) {
-        __asm__ volatile("hlt");
-    }
+    while (1) { __asm__ volatile("hlt"); }
 }
 
 void start_kernel(uint64_t mb_magic, void *mb_info) {
-    (void)mb_magic;
-    (void)mb_info;
+    (void)mb_magic; (void)mb_info;
     
     console_init();
     printk("=== RELIS 64-BIT KERNEL BOOTING ===");
 
     gdt_init();
-    pmm_init(0, 0); 
+    pmm_init(262144, 0); 
     irq_init();  
     sched_init(); 
     syscall_init();
+
+    paging_init(); // Initialize Virtual Memory
 
     timer_init(100);
     keyboard_init();
 
     vfs_init();
-    
     struct dentry *root = vfs_kern_mount(&ramfs_fs_type);
     printk("Root filesystem (ramfs) mounted at /");
 
@@ -53,6 +52,18 @@ void start_kernel(uint64_t mb_magic, void *mb_info) {
     __asm__ volatile("sti");
     printk("Interrupts enabled");
 
+    // TEST 1: vmalloc and vfree
+    uint32_t *test_vm = vmalloc(4096);
+    if (test_vm) {
+        test_vm[0] = 0xDEADBEEF;
+        printk("vmalloc test: mapped at 0x%x, wrote 0x%x", test_vm, test_vm[0]);
+        vfree(test_vm);
+        printk("vfree test: freed 0x%x", test_vm);
+    }
+
+    // TEST 2: sys_mmap (VMA allocation)
+    sys_mmap(0, 8192, PTE_WRITABLE);
+
     struct file *f = vfs_open("/proc/cpuinfo");
     if (f) {
         char buf[128];
@@ -61,15 +72,11 @@ void start_kernel(uint64_t mb_magic, void *mb_info) {
             buf[bytes] = '\0';
             printk("Read from /proc/cpuinfo: %s", buf);
         }
-    } else {
-        printk("Failed to open /proc/cpuinfo");
     }
     
-    kernel_thread("kworker", heartbeat_task, 0);
+    kernel_thread("kworker", heartbeat_task, 0, SCHED_NORMAL);
 
     printk("RELIS Kernel v1.0 (x86_64) initialized. Idling...");
 
-    while (1) {
-        __asm__ volatile("hlt");
-    }
+    while (1) { __asm__ volatile("hlt"); }
 }

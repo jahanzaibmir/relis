@@ -2,6 +2,7 @@ ENTRY(_start)
 
 SECTIONS {
     . = 1M;
+
     .boot :
     {
         KEEP(*(.multiboot))
@@ -11,6 +12,7 @@ SECTIONS {
         *(.boot.bss)
     }
 
+    /* Jump to higher half virtually, but keep physical LMA continuing from .boot */
     . += 0xFFFFFFFF80000000;
 
     .text ALIGN(4096) : AT(ADDR(.text) - 0xFFFFFFFF80000000)

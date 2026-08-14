@@ -10,9 +10,9 @@ switch_to:
     push r14
     push r15
     
-    mov [rdi], rsp
+    mov [rdi], rsp   ; prev->rsp = rsp
     
-    mov rsp, [rsi]
+    mov rsp, [rsi]   ; rsp = next->rsp
     
     pop r15
     pop r14

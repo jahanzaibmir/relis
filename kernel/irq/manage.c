@@ -26,9 +26,19 @@ void dispatch_irq(struct registers *regs) {
 }
 
 void dispatch_isr(struct registers *regs) {
-    if (regs->int_no == 128) {
+    // Page Fault (ISR 14)
+    if (regs->int_no == 14) {
+        uint64_t faulting_address;
+        __asm__ volatile("mov %%cr2, %0" : "=r"(faulting_address));
+        handle_page_fault(faulting_address, regs->err_code);
         return;
     }
+    
+    // Syscall (ISR 128)
+    if (regs->int_no == 128) {
+        return; 
+    }
+    
     printk("KERNEL PANIC: Exception %d", regs->int_no);
     for (;;) __asm__ volatile("cli; hlt");
 }

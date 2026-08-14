@@ -1,4 +1,3 @@
-; arch/entry.asm
 MB_MAGIC    equ 0xE85250D6
 MB_ARCH     equ 0
 MB_LEN      equ (mb_header_end - mb_header_start)
@@ -23,7 +22,7 @@ stack_bottom:
     resb 16384
 stack_top:
 
-; DEDICATED TABLES FOR LOWER HALF
+; LOWER HALF TABLES
 align 4096
 p4_table:
     resb 4096
@@ -32,11 +31,18 @@ p3_table:
 p2_table:
     resb 4096
 
-; DEDICATED TABLES FOR HIGHER HALF (0xFFFFFFFF80000000)
+; HIGHER HALF KERNEL TABLES (0xFFFFFFFF80000000) -> PML4[511]
 align 4096
 p3_table_high:
     resb 4096
 p2_table_high:
+    resb 4096
+
+; DIRECT MAP TABLES (0xFFFF800000000000) -> PML4[256]
+align 4096
+p3_table_direct:
+    resb 4096
+p2_table_direct:
     resb 4096
 
 section .boot.text
@@ -49,7 +55,7 @@ _start:
     mov edi, eax
     mov esi, ebx
 
-    ; --- Map Lower Half (0x0000000000000000) ---
+    ; --- Map Lower Half (0x0000000000000000) -> PML4[0] ---
     mov eax, p3_table
     or eax, 0b11
     mov [p4_table], eax
@@ -58,8 +64,7 @@ _start:
     or eax, 0b11
     mov [p3_table], eax
 
-    ; --- Map Higher Half (0xFFFFFFFF80000000) ---
-    ; P4[511] MUST point to p3_table_high, or the CPU triple faults!
+    ; --- Map Higher Half Kernel (0xFFFFFFFF80000000) -> PML4[511] ---
     mov eax, p3_table_high
     or eax, 0b11
     mov [p4_table + 511 * 8], eax
@@ -67,6 +72,15 @@ _start:
     mov eax, p2_table_high
     or eax, 0b11
     mov [p3_table_high + 510 * 8], eax
+
+    ; --- Map Direct Map (0xFFFF800000000000) -> PML4[256] ---
+    mov eax, p3_table_direct
+    or eax, 0b11
+    mov [p4_table + 256 * 8], eax
+
+    mov eax, p2_table_direct
+    or eax, 0b11
+    mov [p3_table_direct], eax
 
     ; --- Map 2MB Pages in Lower Half P2 (First 1GB) ---
     mov ecx, 0
@@ -90,7 +104,17 @@ _start:
     cmp ecx, 512
     jne .map_p2_high
 
-    ; Load CR3 with the P4 table
+    ; --- Map 2MB Pages in Direct Map P2 (First 1GB) ---
+    mov ecx, 0
+.map_p2_direct:
+    mov eax, 0x200000
+    mul ecx
+    or eax, 0b10000011
+    mov [p2_table_direct + ecx * 8], eax
+    inc ecx
+    cmp ecx, 512
+    jne .map_p2_direct
+
     mov eax, p4_table
     mov cr3, eax
 
@@ -139,3 +163,4 @@ long_mode_start:
     jmp .hang
 
 section .note.GNU-stack noalloc noexec nowrite progbits
+EOF
