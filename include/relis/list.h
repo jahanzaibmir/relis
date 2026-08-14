@@ -48,7 +48,6 @@ static inline int list_empty(const struct list_head *head) {
          &pos->member != (head); \
          pos = list_next_entry(pos, member))
 
-// Safely iterates through the list, allowing the current item to be deleted
 #define list_for_each_entry_safe(pos, n, head, member) \
     for (pos = list_first_entry(head, typeof(*pos), member), \
          n = list_next_entry(pos, member); \

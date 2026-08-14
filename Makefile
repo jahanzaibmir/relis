@@ -8,7 +8,9 @@ LD      := gcc
 CFLAGS  := -std=gnu11 -ffreestanding -fno-builtin -fno-stack-protector \
            -fno-exceptions -fno-pie -m64 -mno-red-zone -mcmodel=kernel \
            -Wall -Wextra \
-           -I . -I include -I include/asm -I arch -I arch/mm -I kernel -I kernel/drivers -I drivers -I mm -I fs -I net
+           -I . -I include -I include/asm -I arch -I arch/mm -I kernel -I kernel/drivers -I drivers -I drivers/net/ethernet/intel/relis_nic -I mm -I fs -I net
+
+
 
 ASFLAGS := -f elf64
 LDFLAGS := -T arch/linker.ld -ffreestanding -nostdlib -m64 -no-pie -e _start -lgcc
@@ -48,15 +50,17 @@ KERNEL_C_SRCS := \
     kernel/drivers/timer.c \
     kernel/drivers/keyboard.c \
     kernel/drivers/disk/ata.c \
-    kernel/drivers/pci/pci.c \
+    drivers/pci/pci.c \
+    drivers/net/ethernet/intel/relis_nic/nic_main.c \
+    drivers/net/ethernet/intel/relis_nic/nic_hw.c \
+    drivers/net/ethernet/intel/relis_nic/nic_netdev.c \
     fs/vfs.c \
     fs/proc/proc.c \
     fs/ramfs/ramfs.c \
     net/net.c \
     net/core/dev.c \
     net/ipv4/ip.c \
-    net/ipv4/udp.c \
-    kernel/drivers/net/e1000.c
+    net/ipv4/udp.c
 
 KERNEL_ASM_SRCS := \
     arch/entry.asm \

@@ -1,7 +1,6 @@
 /*
- * RELIS — kernel/drivers/pci/pci.h
- * PCI bus enumeration and config space access.
- * Uses PCI Configuration Mechanism #1 (ports 0xCF8 / 0xCFC).
+ * RELIS — drivers/pci/pci.h
+ * Top-tier PCI bus enumeration and config space access.
  */
 #pragma once
 #include <stdint.h>
@@ -14,9 +13,11 @@
 #define PCI_VENDOR_ID       0x00
 #define PCI_DEVICE_ID       0x02
 #define PCI_COMMAND         0x04
+#define PCI_STATUS          0x06
 #define PCI_CLASS_REVISION  0x08
 #define PCI_SUBCLASS        0x0A
 #define PCI_CLASS_CODE      0x0B
+#define PCI_CACHE_LINE_SIZE 0x0C
 #define PCI_HEADER_TYPE     0x0E
 #define PCI_BAR0            0x10
 #define PCI_BAR1            0x14
@@ -27,17 +28,38 @@
 #define PCI_INTERRUPT_LINE  0x3C
 #define PCI_INTERRUPT_PIN   0x3D
 
+/* Bridge registers */
+#define PCI_PRIMARY_BUS     0x18
+#define PCI_SECONDARY_BUS   0x19
+#define PCI_SUBORDINATE_BUS 0x1A
+
 /* Command register bits */
-#define PCI_CMD_IO        (1 << 0)   /* enable I/O space decode    */
-#define PCI_CMD_MEM       (1 << 1)   /* enable memory space decode */
-#define PCI_CMD_BUSMASTER (1 << 2)   /* enable bus mastering (DMA) */
+#define PCI_CMD_IO        (1 << 0)
+#define PCI_CMD_MEM       (1 << 1)
+#define PCI_CMD_BUSMASTER (1 << 2)
+
+/* Header Types */
+#define PCI_HEADER_TYPE_NORMAL 0
+#define PCI_HEADER_TYPE_BRIDGE 1
+#define PCI_HEADER_TYPE_CARDBUS 2
+#define PCI_HEADER_TYPE_MULTIFUNC 0x80
+
+/* BAR Types */
+#define PCI_BAR_TYPE_IO    1
+#define PCI_BAR_TYPE_MMIO32 0
+#define PCI_BAR_TYPE_MMIO64 2
+
+#define MAX_PCI_DEVICES 32
 
 typedef struct {
     uint8_t  bus, slot, func;
     uint16_t vendor_id, device_id;
-    uint8_t  class_code, subclass, irq;
-    uint32_t bar[6];
-    int      bar_is_mmio[6];
+    uint8_t  class_code, subclass, prog_if;
+    uint8_t  header_type;
+    uint8_t  irq;
+    uint64_t bar[6];
+    uint8_t  bar_type[6];
+    int      bar_count;
 } pci_device_t;
 
 /* Config space read/write */
