@@ -2,7 +2,8 @@
 #include "relis/printk.h"
 
 static void enqueue_task_fair(struct task_struct *p) {
-    list_add(&p->se.run_node, &runqueues.cfs_queue);
+    // FIX: Add to tail so tasks run in the order they were created (FIFO)
+    list_add_tail(&p->se.run_node, &runqueues.cfs_queue);
     runqueues.nr_running++;
 }
 
@@ -16,6 +17,11 @@ static struct task_struct *pick_next_task_fair(void) {
         return NULL;
     }
     struct list_head *next = runqueues.cfs_queue.next;
+    
+    // Rotate the queue: move the picked task to the back so others get a turn.
+    list_del(next);
+    list_add_tail(next, &runqueues.cfs_queue);
+    
     return list_entry(next, struct task_struct, se.run_node);
 }
 

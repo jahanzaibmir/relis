@@ -8,6 +8,9 @@ struct task_struct *current_task = 0;
 static struct list_head global_tasks;
 static uint32_t next_pid = 1;
 
+extern void set_tss_rsp0(uint64_t rsp);
+extern uint8_t stack_top[];
+
 void sched_init(void) {
     INIT_LIST_HEAD(&runqueues.cfs_queue);
     INIT_LIST_HEAD(&runqueues.rt_queue);
@@ -25,8 +28,10 @@ void sched_init(void) {
     kstrcpy(current_task->name, "swapper");
     current_task->state = TASK_RUNNING;
     current_task->sched_class = &idle_sched_class;
-    list_add(&current_task->tasks, &global_tasks);
     
+    current_task->kernel_stack_top = (uint64_t*)stack_top;
+    
+    list_add(&current_task->tasks, &global_tasks);
     printk("Scheduler initialized (Class-based, Preemptive)");
 }
 
@@ -59,7 +64,8 @@ int kernel_thread(const char *name, void (*fn)(void), void *arg, int policy) {
         p->sched_class = &fair_sched_class;
     }
     
-    uint64_t *stack = p->stack + (KERNEL_STACK_SIZE / 8);
+    p->kernel_stack_top = p->kernel_stack + (KERNEL_STACK_SIZE / 8);
+    uint64_t *stack = p->kernel_stack_top;
     
     *--stack = (uint64_t)thread_trampoline;
     *--stack = 0; // RBP
@@ -88,7 +94,7 @@ void wake_up_process(struct task_struct *p) {
 }
 
 void scheduler_tick(void) {
-    update_rq_clock(&runqueues);
+    runqueues.clock++;
     if (current_task->sched_class->task_tick) {
         current_task->sched_class->task_tick(current_task);
     }
@@ -98,7 +104,6 @@ void __schedule(void) {
     struct task_struct *prev = current_task;
     struct task_struct *next = NULL;
     
-    // Pick the highest priority task. RT > Fair > Idle
     if (rt_sched_class.pick_next_task) {
         next = rt_sched_class.pick_next_task();
     }
@@ -114,11 +119,11 @@ void __schedule(void) {
         return;
     }
     
-    if (next->sched_class->dequeue_task) {
-        next->sched_class->dequeue_task(next);
-    }
+    // FIX: DO NOT dequeue here! pick_next_task_fair already rotated the queue.
+    // If we dequeue, the task is lost when preempted!
     
     current_task = next;
+    set_tss_rsp0((uint64_t)next->kernel_stack_top);
     switch_to(prev, next);
 }
 

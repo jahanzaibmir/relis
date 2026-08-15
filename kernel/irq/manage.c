@@ -1,5 +1,6 @@
 #include "relis/irq.h"
 #include "relis/printk.h"
+#include "relis/mm.h"
 #include "arch/io.h"
 
 #define IDT_ENTRIES 256
@@ -26,7 +27,6 @@ void dispatch_irq(struct registers *regs) {
 }
 
 void dispatch_isr(struct registers *regs) {
-    // Page Fault (ISR 14)
     if (regs->int_no == 14) {
         uint64_t faulting_address;
         __asm__ volatile("mov %%cr2, %0" : "=r"(faulting_address));
@@ -34,12 +34,12 @@ void dispatch_isr(struct registers *regs) {
         return;
     }
     
-    // Syscall (ISR 128)
     if (regs->int_no == 128) {
+        syscall_dispatch(regs); // FIX: Route syscalls here!
         return; 
     }
     
-    printk("KERNEL PANIC: Exception %d", regs->int_no);
+    printk("KERNEL PANIC: Exception %d (Error Code: 0x%x)", regs->int_no, regs->err_code);
     for (;;) __asm__ volatile("cli; hlt");
 }
 

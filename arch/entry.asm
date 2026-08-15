@@ -55,7 +55,7 @@ _start:
     mov edi, eax
     mov esi, ebx
 
-    ; --- Map Lower Half (0x0000000000000000) -> PML4[0] ---
+    ; map Lower Half (0x0000000000000000)
     mov eax, p3_table
     or eax, 0b11
     mov [p4_table], eax
@@ -64,7 +64,7 @@ _start:
     or eax, 0b11
     mov [p3_table], eax
 
-    ; --- Map Higher Half Kernel (0xFFFFFFFF80000000) -> PML4[511] ---
+    ; Map Higher Half Kernel (0xFFFFFFFF80000000)
     mov eax, p3_table_high
     or eax, 0b11
     mov [p4_table + 511 * 8], eax
@@ -73,7 +73,7 @@ _start:
     or eax, 0b11
     mov [p3_table_high + 510 * 8], eax
 
-    ; --- Map Direct Map (0xFFFF800000000000) -> PML4[256] ---
+    ; Map Direct Map (0xFFFF800000000000)
     mov eax, p3_table_direct
     or eax, 0b11
     mov [p4_table + 256 * 8], eax
@@ -82,7 +82,9 @@ _start:
     or eax, 0b11
     mov [p3_table_direct], eax
 
-    ; --- Map 2MB Pages in Lower Half P2 (First 1GB) ---
+    ;  Map 2MB Pages in Lower Half P2 (ONLY FIRST 2MB) 
+    ; We MUST NOT map the whole 1GB here, or it creates Huge Pages that
+    ; arch_map_page cannot split into 4KB pages later!
     mov ecx, 0
 .map_p2_low:
     mov eax, 0x200000
@@ -90,10 +92,10 @@ _start:
     or eax, 0b10000011
     mov [p2_table + ecx * 8], eax
     inc ecx
-    cmp ecx, 512
+    cmp ecx, 1               ; ONLY MAP 1 ENTRY (2MB)
     jne .map_p2_low
 
-    ; --- Map 2MB Pages in Higher Half P2 (First 1GB) ---
+    ; Map 2MB Pages in Higher Half P2 (First 1GB)
     mov ecx, 0
 .map_p2_high:
     mov eax, 0x200000
@@ -104,7 +106,7 @@ _start:
     cmp ecx, 512
     jne .map_p2_high
 
-    ; --- Map 2MB Pages in Direct Map P2 (First 1GB) ---
+    ;  Map 2MB Pages in Direct Map P2 (First 1GB) 
     mov ecx, 0
 .map_p2_direct:
     mov eax, 0x200000
@@ -163,4 +165,3 @@ long_mode_start:
     jmp .hang
 
 section .note.GNU-stack noalloc noexec nowrite progbits
-EOF

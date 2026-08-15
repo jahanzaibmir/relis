@@ -58,7 +58,8 @@ struct task_struct {
     const struct sched_class *sched_class;
     struct list_head tasks;
     
-    uint64_t stack[KERNEL_STACK_SIZE / 8];
+    uint64_t kernel_stack[KERNEL_STACK_SIZE / 8]; // Dedicated Ring 0 stack
+    uint64_t *kernel_stack_top; // Used to update TSS RSP0
     
     void (*fn)(void);
     void *arg;

@@ -5,15 +5,14 @@ CC      := gcc
 AS      := nasm
 LD      := gcc
 
+# FIX: Added -I drivers/net/ethernet/intel/relis_nic to CFLAGS
 CFLAGS  := -std=gnu11 -ffreestanding -fno-builtin -fno-stack-protector \
            -fno-exceptions -fno-pie -m64 -mno-red-zone -mcmodel=kernel \
            -Wall -Wextra \
-           -I . -I include -I include/asm -I arch -I arch/mm -I kernel -I kernel/drivers -I drivers -I drivers/net/ethernet/intel/relis_nic -I mm -I fs -I net
-
-
+           -I . -I include -I include/asm -I arch -I arch/mm -I arch/entry -I kernel -I kernel/drivers -I drivers -I drivers/block -I drivers/net/ethernet/intel/relis_nic -I mm -I fs -I net
 
 ASFLAGS := -f elf64
-LDFLAGS := -T arch/linker.ld -ffreestanding -nostdlib -m64 -no-pie -e _start -lgcc
+LDFLAGS := -T arch/linker.ld -ffreestanding -nostdlib -m64 -no-pie -e _start -lgcc -z noexecstack
 
 BUILD   := build
 KERNEL  := $(BUILD)/relis.elf
@@ -49,14 +48,16 @@ KERNEL_C_SRCS := \
     kernel/drivers/serial.c \
     kernel/drivers/timer.c \
     kernel/drivers/keyboard.c \
-    kernel/drivers/disk/ata.c \
     drivers/pci/pci.c \
     drivers/net/ethernet/intel/relis_nic/nic_main.c \
     drivers/net/ethernet/intel/relis_nic/nic_hw.c \
     drivers/net/ethernet/intel/relis_nic/nic_netdev.c \
+    drivers/block/ata.c \
     fs/vfs.c \
     fs/proc/proc.c \
-    fs/ramfs/ramfs.c \
+    fs/relisfs/relisfs.c \
+    fs/exec.c \
+    fs/binfmt_elf.c \
     net/net.c \
     net/core/dev.c \
     net/ipv4/ip.c \
@@ -66,13 +67,24 @@ KERNEL_ASM_SRCS := \
     arch/entry.asm \
     arch/gdt_flush.asm \
     arch/isr_stubs.asm \
+    arch/entry/syscall_entry.asm \
+    arch/entry/drop_to_user.asm \
     kernel/sched/switch.asm
 
 KERNEL_OBJS := $(patsubst %.c, $(BUILD)/%.o, $(KERNEL_C_SRCS)) \
-               $(patsubst %.asm, $(BUILD)/%.o, $(KERNEL_ASM_SRCS))
+               $(patsubst %.asm, $(BUILD)/%.o, $(KERNEL_ASM_SRCS)) \
+               build/user_prog.o
 
 .PHONY: all
 all: $(KERNEL)
+
+build/user_prog.o: user_prog.asm
+>mkdir -p $(BUILD)
+>nasm -f elf64 -o $(BUILD)/user_prog.o $<
+>ld -m elf_x86_64 -Ttext 0x400000 -e _start -o $(BUILD)/user_prog.elf $(BUILD)/user_prog.o
+>cp $(BUILD)/user_prog.elf user_prog.elf
+>objcopy -I binary -O elf64-x86-64 -B i386:x86-64 user_prog.elf $@
+>rm user_prog.elf
 
  $(KERNEL): $(KERNEL_OBJS) | $(BUILD)
 >$(LD) $(LDFLAGS) -o $@ $^
@@ -110,7 +122,7 @@ iso: $(KERNEL) $(BUILD)/disk.img
 
 .PHONY: run
 run: iso $(BUILD)/disk.img
->qemu-system-x86_64 -cdrom $(ISO) -m 256M -drive file=$(BUILD)/disk.img,format=raw,if=ide -serial stdio -vga std -net nic,model=e1000 -net user
+>qemu-system-x86_64 -cdrom $(ISO) -m 256M -drive file=$(BUILD)/disk.img,format=raw,if=ide -serial stdio -vga std -net nic,model=e1000 -net user -vnc :0
 
 .PHONY: clean
 clean:

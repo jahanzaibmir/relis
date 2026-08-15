@@ -1,22 +1,6 @@
 #include "gdt.h"
 #include <stdint.h>
 
-extern uint8_t stack_top[];
-
-typedef struct {
-    uint16_t limit_low;
-    uint16_t base_low;
-    uint8_t  base_mid;
-    uint8_t  access;
-    uint8_t  flags_limit;
-    uint8_t  base_high;
-} __attribute__((packed)) gdt_entry_t;
-
-typedef struct {
-    uint16_t limit;
-    uint64_t base;
-} __attribute__((packed)) gdt_descriptor_t;
-
 typedef struct __attribute__((packed)) {
     uint32_t reserved0;
     uint64_t rsp0;
@@ -37,51 +21,57 @@ typedef struct __attribute__((packed)) {
     uint16_t iomap_base;
 } tss_t;
 
-static gdt_entry_t gdt[8];
+// Hardcoded 64-bit GDT entries.
+static uint64_t gdt[8] = {
+    0,                  // 0x00: Null
+    0x00AF9A000000FFFF, // 0x08: Kernel CS (Base=0, Limit=4GB, P=1, DPL=0, S=1, Type=0xA, G=1, L=1)
+    0x00CF92000000FFFF, // 0x10: Kernel DS (Base=0, Limit=4GB, P=1, DPL=0, S=1, Type=0x2, G=1, B=1)
+    0x00CFF2000000FFFF, // 0x18: User DS   (Base=0, Limit=4GB, P=1, DPL=3, S=1, Type=0x2, G=1, B=1)
+    0x00AFFA000000FFFF, // 0x20: User CS   (Base=0, Limit=4GB, P=1, DPL=3, S=1, Type=0xA, G=1, L=1)
+    0,                  // 0x28: TSS (Part 1)
+    0                   // 0x30: TSS (Part 2)
+};
+
+typedef struct {
+    uint16_t limit;
+    uint64_t base;
+} __attribute__((packed)) gdt_descriptor_t;
+
 static gdt_descriptor_t gdtr;
-static tss_t tss;
+tss_t tss;
+
+uint64_t tss_rsp0 = 0;
+static uint8_t intr_stack[16384] __attribute__((aligned(16)));
 
 extern void gdt_flush(uint64_t gdtr_ptr);
 extern void tss_flush(uint16_t tss_selector);
 
-static void gdt_set_entry(int idx, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
-    gdt[idx].base_low    = (uint16_t)(base & 0xFFFF);
-    gdt[idx].base_mid    = (uint8_t)((base >> 16) & 0xFF);
-    gdt[idx].base_high   = (uint8_t)((base >> 24) & 0xFF);
-    gdt[idx].limit_low   = (uint16_t)(limit & 0xFFFF);
-    gdt[idx].flags_limit = (uint8_t)(((limit >> 16) & 0x0F) | (flags & 0xF0));
-    gdt[idx].access      = access;
+void set_tss_rsp0(uint64_t rsp) {
+    tss_rsp0 = rsp;
+    tss.rsp0 = rsp;
 }
 
-static void gdt_set_tss(int idx, uint64_t base, uint32_t limit) {
-    gdt[idx].base_low    = (uint16_t)(base & 0xFFFF);
-    gdt[idx].base_mid    = (uint8_t)((base >> 16) & 0xFF);
-    gdt[idx].base_high   = (uint8_t)((base >> 24) & 0xFF);
-    gdt[idx].limit_low   = (uint16_t)(limit & 0xFFFF);
-    gdt[idx].flags_limit = (uint8_t)(((limit >> 16) & 0x0F) | 0x00);
-    gdt[idx].access      = 0x89;
+static void gdt_set_tss(uint64_t base, uint32_t limit) {
+    uint64_t entry = 0;
+    entry |= (limit & 0xFFFF);
+    entry |= (uint64_t)((limit >> 16) & 0x0F) << 48;
+    entry |= (base & 0xFFFFFF) << 16;
+    entry |= ((base >> 24) & 0xFF) << 56;
+    entry |= 0x89ULL << 40; // Present, TSS
+    gdt[5] = entry;
     
-    gdt[idx + 1].limit_low = 0;
-    gdt[idx + 1].base_low = 0;
-    gdt[idx + 1].base_mid = 0;
-    gdt[idx + 1].access = 0;
-    gdt[idx + 1].flags_limit = 0;
-    gdt[idx + 1].base_high = 0;
+    gdt[6] = (base >> 32) & 0xFFFFFFFF;
 }
 
 void gdt_init(void) {
-    gdtr.limit = (uint16_t)(sizeof(gdt_entry_t) * 8 - 1);
+    gdtr.limit = sizeof(gdt) - 1;
     gdtr.base  = (uint64_t)(uintptr_t)&gdt;
 
-    gdt_set_entry(0, 0, 0, 0, 0);               
-    gdt_set_entry(1, 0, 0xFFFFF, 0x9A, 0xA0);   
-    gdt_set_entry(2, 0, 0xFFFFF, 0x92, 0xA0);   
-    gdt_set_entry(3, 0, 0xFFFFF, 0xFA, 0xA0);   
-    gdt_set_entry(4, 0, 0xFFFFF, 0xF2, 0xA0);   
-    gdt_set_tss(5, (uint64_t)(uintptr_t)&tss, sizeof(tss) - 1); 
+    gdt_set_tss((uint64_t)(uintptr_t)&tss, sizeof(tss) - 1);
 
     gdt_flush((uint64_t)(uintptr_t)&gdtr);
     
-    tss.rsp0 = (uint64_t)(uintptr_t)stack_top;
+    tss_rsp0 = (uint64_t)(uintptr_t)&intr_stack[sizeof(intr_stack)];
+    tss.rsp0 = tss_rsp0;
     tss_flush(0x28);
 }

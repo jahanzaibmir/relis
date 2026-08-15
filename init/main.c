@@ -10,25 +10,40 @@
 #include "arch/gdt.h"
 #include "drivers/timer.h"
 #include "drivers/keyboard.h"
-#include "relis_nic.h" // <--- Added
+#include "drivers/pci/pci.h"
+#include "drivers/block/ata.h"
+#include "fs/relisfs/relisfs.h"
+#include "relis_nic.h"
 
 extern struct file_system_type proc_fs_type;
-extern struct file_system_type ramfs_fs_type;
+extern void exec_user_program(uint8_t *elf_data);
+
+extern uint8_t _binary_user_prog_elf_start[];
+extern uint8_t _binary_user_prog_elf_end[];
+
+static void init_task(void) {
+    uint64_t prog_size = _binary_user_prog_elf_end - _binary_user_prog_elf_start;
+    printk("Loading user program (%d bytes)...", prog_size);
+    exec_user_program(_binary_user_prog_elf_start);
+}
 
 static void heartbeat_task(void) {
-    while (1) { __asm__ volatile("hlt"); }
+    while (1) {
+        __asm__ volatile("hlt");
+        schedule();
+    }
 }
 
 void start_kernel(uint64_t mb_magic, void *mb_info) {
     (void)mb_magic; (void)mb_info;
-    
+
     console_init();
     printk("=== RELIS 64-BIT KERNEL BOOTING ===");
 
     gdt_init();
-    pmm_init(262144, 0); 
-    irq_init();  
-    sched_init(); 
+    pmm_init(262144, 0);
+    irq_init();
+    sched_init();
     syscall_init();
 
     paging_init();
@@ -37,8 +52,11 @@ void start_kernel(uint64_t mb_magic, void *mb_info) {
     keyboard_init();
 
     vfs_init();
-    struct dentry *root = vfs_kern_mount(&ramfs_fs_type);
-    printk("Root filesystem (ramfs) mounted at /");
+    ata_init();
+    
+    // Mount persistent filesystem
+    struct dentry *root = vfs_kern_mount(&relisfs_fs_type);
+    printk("Root filesystem (relisfs) mounted at /");
 
     struct dentry *proc_root = proc_fs_type.mount(&proc_fs_type, NULL);
     if (root && proc_root) {
@@ -49,29 +67,22 @@ void start_kernel(uint64_t mb_magic, void *mb_info) {
 
     net_init();
     pci_init();
-    relis_nic_init(); // <--- Added
+    relis_nic_init();
 
     __asm__ volatile("sti");
     printk("Interrupts enabled");
 
-    uint32_t *test_vm = vmalloc(4096);
-    if (test_vm) {
-        test_vm[0] = 0xDEADBEEF;
-    }
-
-    struct file *f = vfs_open("/proc/cpuinfo");
-    if (f) {
-        char buf[128];
-        ssize_t bytes = vfs_read(f, buf, 127);
-        if (bytes > 0) {
-            buf[bytes] = '\0';
-            printk("Read from /proc/cpuinfo: %s", buf);
-        }
-    }
-    
+    kernel_thread("init", init_task, 0, SCHED_NORMAL);
     kernel_thread("kworker", heartbeat_task, 0, SCHED_NORMAL);
 
     printk("RELIS Kernel v1.0 (x86_64) initialized. Idling...");
 
-    while (1) { __asm__ volatile("hlt"); }
+    schedule();
+
+    while (1) {
+        __asm__ volatile("hlt");
+        if (current_task->flags & TIF_NEED_RESCHED) {
+            schedule();
+        }
+    }
 }

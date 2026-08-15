@@ -1,4 +1,3 @@
-; arch/isr_stubs.asm
 section .text
 bits 64
 
@@ -78,9 +77,7 @@ isr_common:
     push r15
     
     mov rdi, rsp
-    sub rsp, 8          ; ALIGN STACK TO 16 BYTES (CRITICAL FOR GCC)
     call dispatch_isr
-    add rsp, 8          ; RESTORE STACK
     
     pop r15
     pop r14
@@ -145,9 +142,7 @@ irq_common:
     push r15
     
     mov rdi, rsp
-    sub rsp, 8          ; ALIGN STACK TO 16 BYTES (CRITICAL FOR GCC)
     call dispatch_irq
-    add rsp, 8          ; RESTORE STACK
     
     pop r15
     pop r14

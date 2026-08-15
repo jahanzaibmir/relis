@@ -11,9 +11,8 @@ static void timer_callback(struct registers *regs) {
     (void)regs;
     jiffies++;
     scheduler_tick();
-    if (current_task->flags & TIF_NEED_RESCHED) {
-        schedule();
-    }
+    // FIX: DO NOT call schedule() here! It corrupts the IRQ stack frame.
+    // The scheduler will pick up the TIF_NEED_RESCHED flag on the next syscall or idle loop.
 }
 
 void timer_init(uint32_t freq) {
