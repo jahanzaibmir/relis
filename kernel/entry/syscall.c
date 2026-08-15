@@ -18,7 +18,7 @@ void syscall_dispatch(struct registers *regs) {
                 uint64_t len = regs->rdx;
                 for (uint64_t i = 0; i < len; i++) {
                     terminal_putchar(buf[i]);
-                    serial_putchar(buf[i]); // FIX: Write to serial so it shows in terminal!
+                    serial_putchar(buf[i]); // Write to serial so it shows in terminal!
                 }
                 regs->rax = len;
                 return;
