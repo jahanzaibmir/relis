@@ -27,5 +27,5 @@ char  *kstrchr(const char *s, int c);
 char  *kstrrchr(const char *s, int c);
 char  *kstrstr(const char *haystack, const char *needle);
 
-/string parsing
+//string parsing
 char  *kstrsep(char **stringp, const char *delim);
