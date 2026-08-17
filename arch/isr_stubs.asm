@@ -2,6 +2,7 @@ section .text
 bits 64
 
 global idt_load
+global isr_common_return
 extern dispatch_isr
 extern dispatch_irq
 
@@ -75,10 +76,11 @@ isr_common:
     push r13
     push r14
     push r15
-    
+
     mov rdi, rsp
     call dispatch_isr
-    
+
+isr_common_return:
     pop r15
     pop r14
     pop r13

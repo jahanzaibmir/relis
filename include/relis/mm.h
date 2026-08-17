@@ -11,15 +11,15 @@ uint64_t alloc_page(void);
 void free_page(uint64_t phys);
 
 void paging_init(void);
-void paging_map_page(uint64_t virt, uint64_t phys, uint64_t flags);
-void paging_unmap_page(uint64_t virt);
-void arch_paging_init(void);
 void arch_map_page(uint64_t virt, uint64_t phys, uint64_t flags);
 void handle_page_fault(uint64_t faulting_address, uint64_t error_code);
 
-// Walks the page table to find the PTE for a given virtual address
 pte_t *walk_page_table(uint64_t virt);
 uint64_t get_cr3(void);
+void switch_address_space(uint64_t cr3); // FIX: Added switch_address_space
+
+uint64_t clone_address_space(void);
+uint64_t create_new_address_space(void);
 
 void *vmalloc(size_t size);
 void vfree(void *ptr);

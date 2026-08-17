@@ -1,6 +1,7 @@
 #include "relis/irq.h"
 #include "relis/printk.h"
 #include "relis/mm.h"
+#include "relis/syscall.h" // FIX: Added to resolve warning
 #include "arch/io.h"
 
 #define IDT_ENTRIES 256
@@ -35,7 +36,7 @@ void dispatch_isr(struct registers *regs) {
     }
     
     if (regs->int_no == 128) {
-        syscall_dispatch(regs); // FIX: Route syscalls here!
+        syscall_dispatch(regs); 
         return; 
     }
     

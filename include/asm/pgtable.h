@@ -15,6 +15,7 @@
 #define PTE_DIRTY    (1ULL << 6)
 #define PTE_HUGE     (1ULL << 7)
 #define PTE_GLOBAL   (1ULL << 8)
+#define PTE_COW      (1ULL << 9) // FIX: Custom Copy-on-Write bit!
 #define PTE_NX       (1ULL << 63)
 
 #define PTE_FLAGS_MASK 0xFFF0000000000FFFULL
@@ -30,7 +31,6 @@ static inline uint64_t pud_index(uint64_t va) { return (va >> 30) & 0x1FF; }
 static inline uint64_t pmd_index(uint64_t va) { return (va >> 21) & 0x1FF; }
 static inline uint64_t pte_index(uint64_t va) { return (va >> 12) & 0x1FF; }
 
-// Direct map physical memory to 0xFFFF800000000000
 #define __PHYS_OFFSET 0xFFFF800000000000ULL
 
 static inline void* phys_to_virt(uint64_t pa) {

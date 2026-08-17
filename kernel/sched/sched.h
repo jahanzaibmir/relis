@@ -16,5 +16,9 @@ extern const struct sched_class fair_sched_class;
 extern const struct sched_class rt_sched_class;
 extern const struct sched_class idle_sched_class;
 
+// FIX: Expose these so fork.c can use them
+extern struct list_head global_tasks;
+extern uint32_t next_pid;
+
 void __schedule(void);
 uint64_t sched_clock(void);

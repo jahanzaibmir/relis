@@ -5,11 +5,10 @@ CC      := gcc
 AS      := nasm
 LD      := gcc
 
-# FIX: Added -I drivers/net/ethernet/intel/relis_nic to CFLAGS
 CFLAGS  := -std=gnu11 -ffreestanding -fno-builtin -fno-stack-protector \
            -fno-exceptions -fno-pie -m64 -mno-red-zone -mcmodel=kernel \
            -Wall -Wextra \
-           -I . -I include -I include/asm -I arch -I arch/mm -I arch/entry -I kernel -I kernel/drivers -I drivers -I drivers/block -I drivers/net/ethernet/intel/relis_nic -I mm -I fs -I net
+           -I . -I include -I include/asm -I arch -I arch/mm -I arch/entry -I arch/smp -I kernel -I kernel/drivers -I drivers -I drivers/block -I drivers/net/ethernet/intel/relis_nic -I mm -I fs -I net
 
 ASFLAGS := -f elf64
 LDFLAGS := -T arch/linker.ld -ffreestanding -nostdlib -m64 -no-pie -e _start -lgcc -z noexecstack
@@ -32,6 +31,11 @@ KERNEL_C_SRCS := \
     kernel/sched/syscalls.c \
     kernel/irq/manage.c \
     kernel/entry/syscall.c \
+    kernel/fork.c \
+    kernel/signal.c \
+    kernel/ipc.c \
+    kernel/smp/percpu.c \
+    arch/smp/apic.c \
     lib/string.c \
     mm/page_alloc.c \
     mm/slab.c \
@@ -122,7 +126,7 @@ iso: $(KERNEL) $(BUILD)/disk.img
 
 .PHONY: run
 run: iso $(BUILD)/disk.img
->qemu-system-x86_64 -cdrom $(ISO) -m 256M -drive file=$(BUILD)/disk.img,format=raw,if=ide -serial stdio -vga std -net nic,model=e1000 -net user -vnc :0
+>qemu-system-x86_64 -cdrom $(ISO) -m 256M -drive file=$(BUILD)/disk.img,format=raw,if=ide -serial stdio -vga std -net nic,model=e1000 -net user -vnc :0 -smp 4
 
 .PHONY: clean
 clean:
