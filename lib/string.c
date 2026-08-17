@@ -1,6 +1,6 @@
 #include "relis/string.h"
 
-/* ── Memory Operations ──────────────────────────────── */
+//These would be Memory operations
 
 void *kmemset(void *s, int c, size_t n) {
     uint8_t *p = (uint8_t *)s;
