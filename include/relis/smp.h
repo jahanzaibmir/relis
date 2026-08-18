@@ -13,7 +13,7 @@ struct cpu_info {
 };
 
 extern struct cpu_info cpus[MAX_CPUS];
-extern volatile int num_cpus; // FIX: Made volatile
+extern volatile int num_cpus; 
 
 void smp_init(void);
 struct cpu_info* get_cpu(uint8_t cpu_id);
