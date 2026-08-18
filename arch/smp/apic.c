@@ -11,7 +11,7 @@ uint32_t lapic_get_id(void) {
     return lapic_read(LAPIC_ID) >> 24;
 }
 
-// FIX: Use a simple delay instead of polling Delivery Status bit
+//  Use a simple delay instead of polling Delivery Status bit
 static void wait_for_ipi_delivery(void) {
     for (volatile int i = 0; i < 1000000; i++);
 }
