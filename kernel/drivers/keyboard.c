@@ -1,7 +1,7 @@
 // kernel/drivers/keyboard.c
 #include "keyboard.h"
 #include "relis/irq.h"
-#include "arch/io.h"       // Fixed include path
+#include "arch/io.h"       
 #include "relis/printk.h"
 #include "relis/spinlock.h"
 #include <stdint.h>
@@ -113,7 +113,7 @@ static void kb_irq(struct registers *regs) {
         case 0x46: scroll ^= 1; update_leds(); return;
     }
 
-    // Ctrl combos (e.g., Ctrl+C = 0x03, Ctrl+L = 0x0C)
+    // Ctrl combos 
     if (ctrl) {
         if (sc == 0x2E) { push(0x03); return; }
         if (sc == 0x26) { push(0x0C); return; }
