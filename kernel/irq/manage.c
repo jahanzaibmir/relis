@@ -1,7 +1,8 @@
 #include "relis/irq.h"
 #include "relis/printk.h"
 #include "relis/mm.h"
-#include "relis/syscall.h" // FIX: Added to resolve warning
+#include "relis/syscall.h"
+#include "asm/apic.h"
 #include "arch/io.h"
 
 #define IDT_ENTRIES 256
@@ -14,8 +15,8 @@ void request_irq(uint32_t irq, irq_handler_t handler) {
 }
 
 void ack_irq(uint32_t irq) {
-    if (irq >= 8) outb(0xA0, 0x20);
-    outb(0x20, 0x20);
+    (void)irq;
+    lapic_eoi(); // FIX: Send EOI to Local APIC!
 }
 
 void dispatch_irq(struct registers *regs) {

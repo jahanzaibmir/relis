@@ -18,6 +18,7 @@ KERNEL  := $(BUILD)/relis.elf
 ISO_DIR := $(BUILD)/iso
 ISO     := $(BUILD)/relis.iso
 
+# FIX: Separated C, S, and ASM sources properly
 KERNEL_C_SRCS := \
     init/main.c \
     kernel/kprintf.c \
@@ -36,6 +37,8 @@ KERNEL_C_SRCS := \
     kernel/ipc.c \
     kernel/smp/percpu.c \
     arch/smp/apic.c \
+    arch/smp/smp_boot.c \
+    arch/smp/ap_boot.c \
     lib/string.c \
     mm/page_alloc.c \
     mm/slab.c \
@@ -67,6 +70,9 @@ KERNEL_C_SRCS := \
     net/ipv4/ip.c \
     net/ipv4/udp.c
 
+KERNEL_S_SRCS := \
+    arch/smp/trampoline_data.S
+
 KERNEL_ASM_SRCS := \
     arch/entry.asm \
     arch/gdt_flush.asm \
@@ -76,11 +82,22 @@ KERNEL_ASM_SRCS := \
     kernel/sched/switch.asm
 
 KERNEL_OBJS := $(patsubst %.c, $(BUILD)/%.o, $(KERNEL_C_SRCS)) \
+               $(patsubst %.S, $(BUILD)/%.o, $(KERNEL_S_SRCS)) \
                $(patsubst %.asm, $(BUILD)/%.o, $(KERNEL_ASM_SRCS)) \
                build/user_prog.o
 
 .PHONY: all
 all: $(KERNEL)
+
+# Trampoline binary must be built before trampoline_data.o
+ $(BUILD)/trampoline.bin: arch/smp/trampoline.asm
+>mkdir -p $(BUILD)
+>nasm -f bin -o $@ $<
+
+ $(BUILD)/arch/smp/trampoline_data.o: $(BUILD)/trampoline.bin
+>@mkdir -p $(dir $@)
+>$(CC) $(CFLAGS) -c arch/smp/trampoline_data.S -o $@
+>@echo "[cc]  trampoline_data.S"
 
 build/user_prog.o: user_prog.asm
 >mkdir -p $(BUILD)
@@ -95,6 +112,11 @@ build/user_prog.o: user_prog.asm
 >@echo "[ld]  $@"
 
  $(BUILD)/%.o: %.c | $(BUILD)
+>@mkdir -p $(dir $@)
+>$(CC) $(CFLAGS) -c $< -o $@
+>@echo "[cc]  $<"
+
+ $(BUILD)/%.o: %.S | $(BUILD)
 >@mkdir -p $(dir $@)
 >$(CC) $(CFLAGS) -c $< -o $@
 >@echo "[cc]  $<"

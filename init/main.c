@@ -8,6 +8,7 @@
 #include "relis/types.h"
 #include "relis/string.h"
 #include "relis/smp.h"
+#include "asm/smp_boot.h"
 #include "arch/gdt.h"
 #include "asm/apic.h"
 #include "drivers/timer.h"
@@ -50,7 +51,6 @@ void start_kernel(uint64_t mb_magic, void *mb_info) {
 
     paging_init();
 
-    // FIX: Initialize APIC before Timer!
     apic_init();
     smp_init();
 
@@ -79,6 +79,9 @@ void start_kernel(uint64_t mb_magic, void *mb_info) {
 
     kernel_thread("init", init_task, 0, SCHED_NORMAL);
     kernel_thread("kworker", heartbeat_task, 0, SCHED_NORMAL);
+
+    // FIX: Wake up APs AFTER interrupts are enabled
+    smp_boot_apus();
 
     printk("RELIS Kernel v1.0 (x86_64) initialized. Idling...");
 

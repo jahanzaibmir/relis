@@ -3,11 +3,15 @@
 #include "relis/string.h"
 #include "relis/printk.h"
 #include "relis/fs.h"
+#include "relis/spinlock.h"
 
 struct rq runqueues;
 struct task_struct *current_task = 0;
 struct list_head global_tasks;
 uint32_t next_pid = 1;
+
+// FIX: Big Kernel Lock for SMP safety
+spinlock_t sched_lock = SPIN_LOCK_UNLOCKED;
 
 extern void set_tss_rsp0(uint64_t rsp);
 extern uint8_t stack_top[];
@@ -45,8 +49,13 @@ static void thread_trampoline(void) {
 }
 
 int kernel_thread(const char *name, void (*fn)(void), void *arg, int policy) {
+    spin_lock(&sched_lock);
+    
     struct task_struct *p = kmalloc(sizeof(struct task_struct));
-    if (!p) return -1;
+    if (!p) {
+        spin_unlock(&sched_lock);
+        return -1;
+    }
 
     kmemset(p, 0, sizeof(struct task_struct));
     p->pid = next_pid++;
@@ -86,16 +95,20 @@ int kernel_thread(const char *name, void (*fn)(void), void *arg, int policy) {
         p->sched_class->enqueue_task(p);
     }
     list_add(&p->tasks, &global_tasks);
+    
+    spin_unlock(&sched_lock);
     return p->pid;
 }
 
 void wake_up_process(struct task_struct *p) {
+    spin_lock(&sched_lock);
     if (p && p->state == TASK_INTERRUPTIBLE) {
         p->state = TASK_RUNNING;
         if (p->sched_class->enqueue_task) {
             p->sched_class->enqueue_task(p);
         }
     }
+    spin_unlock(&sched_lock);
 }
 
 void scheduler_tick(void) {
@@ -106,6 +119,8 @@ void scheduler_tick(void) {
 }
 
 void __schedule(void) {
+    spin_lock(&sched_lock);
+    
     struct task_struct *prev = current_task;
     struct task_struct *next = NULL;
 
@@ -121,17 +136,18 @@ void __schedule(void) {
 
     if (next == prev) {
         current_task->flags &= ~TIF_NEED_RESCHED;
+        spin_unlock(&sched_lock);
         return;
     }
 
     current_task = next;
     set_tss_rsp0((uint64_t)next->kernel_stack_top);
 
-    // FIX: Use switch_address_space to update current_pgd!
     if (next->cr3 != get_cr3()) {
         switch_address_space(next->cr3);
     }
 
+    spin_unlock(&sched_lock);
     switch_to(prev, next);
 }
 
