@@ -2,7 +2,7 @@
 #include "relis/mm.h"
 #include "relis/string.h"
 #include "relis/printk.h"
-#include "asm/apic.h" // FIX: Include APIC definitions
+#include "asm/apic.h" //  Include APIC definitions
 #include <stdint.h>
 
 static pgd_t *current_pgd = 0;
@@ -12,7 +12,7 @@ void arch_paging_init(void) {
     __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
     current_pgd = (pgd_t*)phys_to_virt(cr3 & PTE_ADDR_MASK);
 
-    // FIX: Map Local APIC and IOAPIC MMIO space into the VMALLOC area
+    //  Map Local APIC and IOAPIC MMIO space into the VMALLOC area
     // We use PCD (Cache Disable) because MMIO must not be cached by the CPU!
     arch_map_page(LAPIC_VADDR, LAPIC_BASE_PHYS, PTE_WRITABLE | PTE_PCD | PTE_GLOBAL);
     arch_map_page(IOAPIC_VADDR, IOAPIC_BASE_PHYS, PTE_WRITABLE | PTE_PCD | PTE_GLOBAL);
