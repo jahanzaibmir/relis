@@ -10,7 +10,7 @@ struct task_struct *current_task = 0;
 struct list_head global_tasks;
 uint32_t next_pid = 1;
 
-// FIX: Big Kernel Lock for SMP safety
+// Kernel Lock for SMP safety
 spinlock_t sched_lock = SPIN_LOCK_UNLOCKED;
 
 extern void set_tss_rsp0(uint64_t rsp);
