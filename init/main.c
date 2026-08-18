@@ -80,10 +80,10 @@ void start_kernel(uint64_t mb_magic, void *mb_info) {
     kernel_thread("init", init_task, 0, SCHED_NORMAL);
     kernel_thread("kworker", heartbeat_task, 0, SCHED_NORMAL);
 
-    // FIX: Wake up APs AFTER interrupts are enabled
+    // Wake up APs AFTER interrupts are enabled
     smp_boot_apus();
 
-    printk("RELIS Kernel v1.0 (x86_64) initialized. Idling...");
+    printk("RELIS Kernel  initialized. Kept Idling...");
 
     schedule();
 
