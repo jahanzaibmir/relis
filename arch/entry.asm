@@ -31,14 +31,14 @@ p3_table:
 p2_table:
     resb 4096
 
-; HIGHER HALF KERNEL TABLES (0xFFFFFFFF80000000) -> PML4[511]
+; HIGHER HALF KERNEL TABLES ]
 align 4096
 p3_table_high:
     resb 4096
 p2_table_high:
     resb 4096
 
-; DIRECT MAP TABLES (0xFFFF800000000000) -> PML4[256]
+; DIRECT MAP TABLES ]
 align 4096
 p3_table_direct:
     resb 4096
@@ -55,7 +55,7 @@ _start:
     mov edi, eax
     mov esi, ebx
 
-    ; map Lower Half (0x0000000000000000)
+    ; map Lower Half 
     mov eax, p3_table
     or eax, 0b11
     mov [p4_table], eax
@@ -64,7 +64,7 @@ _start:
     or eax, 0b11
     mov [p3_table], eax
 
-    ; Map Higher Half Kernel (0xFFFFFFFF80000000)
+    ; Map Higher Half Kernel
     mov eax, p3_table_high
     or eax, 0b11
     mov [p4_table + 511 * 8], eax
@@ -73,7 +73,7 @@ _start:
     or eax, 0b11
     mov [p3_table_high + 510 * 8], eax
 
-    ; Map Direct Map (0xFFFF800000000000)
+    ; Map Direct Map 
     mov eax, p3_table_direct
     or eax, 0b11
     mov [p4_table + 256 * 8], eax
@@ -82,9 +82,9 @@ _start:
     or eax, 0b11
     mov [p3_table_direct], eax
 
-    ;  Map 2MB Pages in Lower Half P2 (ONLY FIRST 2MB) 
+    ;  Map 2MB Pages in Lower Half P2 (
     ; We MUST NOT map the whole 1GB here, or it creates Huge Pages that
-    ; arch_map_page cannot split into 4KB pages later!
+    
     mov ecx, 0
 .map_p2_low:
     mov eax, 0x200000
