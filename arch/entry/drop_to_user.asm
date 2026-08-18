@@ -5,13 +5,13 @@ drop_to_user:
     ; rdi = user_rsp, rsi = user_rip
     cli                 ; Disable interrupts while building the iretq frame
     
-    push 0x1B          ; FIX: SS (User Data segment, Index 3 | RPL=3 -> 0x18 | 0x03 = 0x1B)
+    push 0x1B          ;  SS (User Data segment, Index 3 | RPL=3 -> 0x18 | 0x03 = 0x1B)
     push rdi           ; RSP
     push 0x202         ; RFLAGS (Interrupts ENABLED, bit 1 reserved set)
-    push 0x23          ; FIX: CS (User Code segment, Index 4 | RPL=3 -> 0x20 | 0x03 = 0x23)
+    push 0x23          ; CS (User Code segment, Index 4 | RPL=3 -> 0x20 | 0x03 = 0x23)
     push rsi           ; RIP
     
-    mov ax, 0x1B       ; FIX: Load User Data segment
+    mov ax, 0x1B       ; Load User Data segment
     mov ds, ax
     mov es, ax
     mov fs, ax
