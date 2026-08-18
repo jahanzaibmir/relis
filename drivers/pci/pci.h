@@ -1,6 +1,6 @@
 /*
- * RELIS — drivers/pci/pci.h
- * Top-tier PCI bus enumeration and config space access.
+ * drivers/pci/pci.h
+
  */
 #pragma once
 #include <stdint.h>
