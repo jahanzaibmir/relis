@@ -73,7 +73,7 @@ void printk(const char *fmt, ...) {
     
     va_end(args);
     
-    // FIX: Add the newline at the end!
+    //dadedd the newline at the end!
     print_char('\n');
     
     spin_unlock(&console_lock);
