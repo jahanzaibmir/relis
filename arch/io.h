@@ -1,12 +1,7 @@
 /*
- * RELIS — arch/io.h
+ * arch/io.h
  * Comprehensive hardware communication layer for x86_64.
- *
- * Includes:
- * 1. Port I/O (inb/outb)
- * 2. Block Port I/O (insw/outsw/insl/outsl) for fast disk/ATA transfers
- * 3. Memory Mapped I/O (readb/readl/readq) for PCIe & Network devices
- * 4. Memory Barriers (mb/rmb/wmb) to enforce CPU instruction ordering
+
  */
 #pragma once
 #include <stdint.h>
