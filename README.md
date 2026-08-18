@@ -9,7 +9,7 @@ RELIS stands for Raw Elemental Low level Instruction System. It is a 64 bit x86_
 #### I am stepping away from development after exhausting available time
 #### but encourage anyone interested to fork the repository and contribute.
 
-####The core issues preventing Application Processor 'AP' startup are documented below:
+#### The core issues preventing Application Processor 'AP' startup are documented below:
 
 Bug 1 (trampoline.asm): Paging (CR0.PG) is enabled without setting Protection Enable (CR0.PE), causing an immediate #GP triple-fault in Real Mode.
 
