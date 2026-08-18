@@ -24,8 +24,8 @@ typedef struct __attribute__((packed)) {
 // Hardcoded 64-bit GDT entries.
 static uint64_t gdt[8] = {
     0,                  // 0x00: Null
-    0x00AF9A000000FFFF, // 0x08: Kernel CS (Base=0, Limit=4GB, P=1, DPL=0, S=1, Type=0xA, G=1, L=1)
-    0x00CF92000000FFFF, // 0x10: Kernel DS (Base=0, Limit=4GB, P=1, DPL=0, S=1, Type=0x2, G=1, B=1)
+    0x00AF9A000000FFFF, 
+    0x00CF92000000FFFF, 
     0x00CFF2000000FFFF, // 0x18: User DS   (Base=0, Limit=4GB, P=1, DPL=3, S=1, Type=0x2, G=1, B=1)
     0x00AFFA000000FFFF, // 0x20: User CS   (Base=0, Limit=4GB, P=1, DPL=3, S=1, Type=0xA, G=1, L=1)
     0,                  // 0x28: TSS (Part 1)
