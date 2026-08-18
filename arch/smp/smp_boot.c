@@ -15,13 +15,13 @@ extern uint8_t trampoline_end[];
 #define TRAMP_ENTRY_OFF  0x18
 #define TRAMP_GDT_OFF   0x20
 
-// FIX: Static stacks eliminate race conditions and kmalloc issues
+// Static stacks eliminate race conditions and kmalloc issues
 static uint8_t ap_stacks[4][16384] __attribute__((aligned(16)));
 
 void smp_boot_apus(void) {
     uint64_t tramp_size = trampoline_end - trampoline_bin;
     
-    // FIX: Use identity-mapped 0x8000 to GUARANTEE we write to physical 0x8000!
+    //  Use identity-mapped 0x8000 to GUARANTEE we write to physical 0x8000!
     uint8_t *tramp_dest = (uint8_t*)0x8000;
     
     // Identity map 0x8000 so the BSP can write to it, and the AP can execute it
@@ -40,7 +40,7 @@ void smp_boot_apus(void) {
     *((uint16_t*)(tramp_dest + TRAMP_GDT_OFF)) = gdtr_limit;
     *((uint32_t*)(tramp_dest + TRAMP_GDT_OFF + 2)) = (uint32_t)gdt_phys;
 
-    // FIX: Disable interrupts during AP boot sequence!
+    //  Disable interrupts during AP boot sequence!
     __asm__ volatile("cli");
 
     for (int i = 1; i < 4; i++) {
@@ -49,7 +49,7 @@ void smp_boot_apus(void) {
         printk("SMP: Waking up AP %d...", i);
 
         send_apic_init(i);
-        // FIX: Greatly increase delay to ensure AP processes INIT before SIPI
+        // Greatly increase delay to ensure AP processes INIT before SIPI
         for (volatile int d = 0; d < 100000000; d++); 
 
         send_apic_startup(i, 0x08);
