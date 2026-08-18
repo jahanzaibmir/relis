@@ -18,7 +18,7 @@ long sys_fork(struct registers *regs) {
     child->state = TASK_RUNNING;
     child->pending_signals = 0;
 
-    // FIX: Clone address space using Copy-on-Write!
+    
     child->cr3 = clone_address_space();
 
     // Clone kernel stack
