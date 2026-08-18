@@ -16,7 +16,7 @@ void request_irq(uint32_t irq, irq_handler_t handler) {
 
 void ack_irq(uint32_t irq) {
     (void)irq;
-    lapic_eoi(); // FIX: Send EOI to Local APIC!
+    lapic_eoi(); //  Send EOI to Local APIC
 }
 
 void dispatch_irq(struct registers *regs) {
