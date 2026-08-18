@@ -20,7 +20,7 @@ start:
     cli
     cld
 
-    ; FIX: Initialize Segment Registers to 0!
+    ;  Initialize Segment Registers to 0!
     xor ax, ax
     mov ds, ax
     mov es, ax
