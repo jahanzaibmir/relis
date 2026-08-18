@@ -21,7 +21,7 @@ Bug 3 (smp_boot.c): The trampoline code is copied to physical 0x108000 instead o
 
 Bug 4 (apic.c): The BSP hangs forever polling bit 12 of LAPIC_ICR_LO, which is reserved and permanently reads as 1 on modern x86/QEMU.
 
-Bug 5 (smp_boot.c): Enabled interrupts allow timer IRQs to preempt the BSP during the INIT-SIPI sequence, breaking the required timing delay. ***
+Bug 5 (smp_boot.c): Enabled interrupts allow timer IRQs to preempt the BSP during the INIT-SIPI sequence, breaking the required timing delay.
 
 
 ---------------------------------------------------------------------------------------------------------------
