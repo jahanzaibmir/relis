@@ -5,7 +5,7 @@
 #include "asm/apic.h"
 
 struct cpu_info cpus[MAX_CPUS];
-volatile int num_cpus = 1; // FIX: Made volatile
+volatile int num_cpus = 1; 
 
 struct cpu_info* get_cpu(uint8_t cpu_id) {
     if (cpu_id >= MAX_CPUS) return 0;
