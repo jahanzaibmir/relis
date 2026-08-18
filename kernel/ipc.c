@@ -2,10 +2,10 @@
 #include "relis/mm.h"
 #include "relis/string.h"
 #include "relis/spinlock.h"
-#include "relis/fs.h"   // FIX: Added for struct file and file_operations
+#include "relis/fs.h"   // Added for struct file and file_operations
 #include <stdint.h>
 
-// --- Pipes ---
+/// Guys these are pipes
 
 typedef struct {
     uint8_t buffer[4096];
@@ -52,7 +52,7 @@ static const struct file_operations pipe_write_fops = { .write = pipe_write };
 long sys_pipe(int fds[2]) {
     relis_pipe_t *p = kmalloc(sizeof(relis_pipe_t));
     kmemset(p, 0, sizeof(relis_pipe_t));
-    p->lock.lock = 0; // FIX: Initialize spinlock
+    p->lock.lock = 0; //
     
     struct file *read_end = kmalloc(sizeof(struct file));
     read_end->f_inode = kmalloc(sizeof(struct inode));
@@ -89,7 +89,7 @@ long sys_pipe(int fds[2]) {
     return 0;
 }
 
-// --- Shared Memory (SHM) ---
+
 
 #define SHM_VADDR_START 0x60000000
 
