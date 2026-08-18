@@ -50,7 +50,7 @@ long sys_execve(struct registers *regs, const char *path) {
         }
     }
 
-    // FIX: Set Stack VMA bounds. DO NOT allocate stack pages! (Demand Paging)
+    //  Set Stack VMA bounds. DO NOT allocate stack pages! (Demand Paging)
     uint64_t user_stack = 0x40000000;
     current_task->stack_start = user_stack - (4 * PAGE_SIZE); // 16KB stack
     current_task->stack_end = user_stack;
@@ -99,7 +99,7 @@ void exec_user_program(uint8_t *elf_data) {
         }
     }
 
-    // FIX: Set Stack VMA bounds. DO NOT allocate stack pages! (Demand Paging)
+    //  Stack VMA bounds. DO NOT allocate stack pages
     uint64_t user_stack = 0x40000000;
     current_task->stack_start = user_stack - (4 * PAGE_SIZE);
     current_task->stack_end = user_stack;
